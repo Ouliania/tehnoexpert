@@ -1,0 +1,31 @@
+<!-- Интерактивный точечный фон "Карта России". Код для блока T123 на Tilda -->
+<div class="tilda-russia-map-bg-wrapper" id="tilda-russia-map-container-84920">
+    <canvas class="tilda-russia-map-canvas"></canvas>
+    <style>
+        .tilda-russia-map-bg-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            overflow: hidden;
+            background: #F8FAFC;
+            pointer-events: auto; /* Позволяет ловить мышь */
+            z-index: 1; /* Нормальный элемент в потоке страницы */
+        }
+        .tilda-russia-map-canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Пропускает клики сквозь канвас на кнопки Tilda */
+        }
+        /* Сброс отступов для стандартного контейнера Tilda T123 */
+        .t123__colormap, .t123 {
+            padding: 0 !important;
+        }
+    </style>
+    <!-- Подгружаем скрипт карты по ссылке через бесплатный CDN jsDelivr -->
+    <script src="https://cdn.jsdelivr.net/gh/Ouliania/tehnoexpert/tilda_russia_map.js"></script>
+</div>
