@@ -77,7 +77,7 @@
         const pad = 60;
         scale = Math.min((w - pad * 2) / bbox.width, (h - pad * 2) / bbox.height);
         offsetX = (w - bbox.width * scale) / 2 - bbox.minX * scale;
-        offsetY = (h - bbox.height * scale) / 2 - bbox.minY * scale;
+        offsetY = (h - bbox.height * scale) * 0.2 - bbox.minY * scale;
 
         rebuildGrid(w, h);
     }
