@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grid Background</title>
+<style>
+:root { --border-faint: #E2E8F0; --heat-100: #FF7200; --bg: #FBFBFB; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); min-height: 100vh; overflow-x: hidden; display: flex; justify-content: center; }
+.hero { position: relative; width: 100%; height: 100vh; overflow: hidden; }
+#c { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); width: 1314px; height: 506px; z-index: 1; pointer-events: none; }
+#g { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+</style>
+</head>
+<body>
+<div class="hero" id="hero">
+  <canvas id="c"></canvas>
+  <div id="g"></div>
+</div>
+<script>
+(() => {
+const NS = 'http://www.w3.org/2000/svg';
+const HERO_W = 1335, GRID_W = 1314, G = (HERO_W - GRID_W) / 2, CANVAS_W = 1314, CANVAS_H = 506;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const grid = document.getElementById('g');
+
+function D(style, parent) {
+  const d = document.createElement('div');
+  for (const [k, v] of Object.entries(style)) d.style[k] = v;
+  if (parent) parent.appendChild(d);
+  return d;
+}
+function E(tag, attrs, parent) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) { if (k === 'text') el.textContent = v; else if (k === 'style') { for (const [sk, sv] of Object.entries(v)) el.style[sk] = sv; } else el.setAttribute(k, v); }
+  if (parent) parent.appendChild(el);
+  return el;
+}
+function curvy(x, y, w, h, corners) {
+  const wrap = D({position:'absolute',left:x+'px',top:y+'px',width:w+'px',height:h+'px',pointerEvents:'none'}, grid);
+  const path = 'M11 1L11 11L10 11L10 7C10 3.68629 7.31371 1 4 1L0 1L0 0L11 0L11 1Z';
+  const rots = {tl:'rotate(-90)',tr:'',bl:'rotate(180)',br:'rotate(90)'};
+  const pos = {tl:{top:'0',left:'0'},tr:{top:'0',right:'0'},bl:{bottom:'0',left:'0'},br:{bottom:'0',right:'0'}};
+  corners.forEach(cn => {
+    const svg = E('svg',{width:'11',height:'11',viewBox:'0 0 11 11',fill:'none',transform:rots[cn],style:Object.assign({position:'absolute'},pos[cn])});
+    E('path',{d:path,fill:'var(--border-faint)'},svg);
+    wrap.appendChild(svg);
+  });
+}
+
+// ===== BUILD GRID =====
+function build(TOP, gridH) {
+  grid.innerHTML = '';
+  const BOT = TOP + gridH;
+
+  // Overlay border-y + border-x
+  D({position:'absolute',top:TOP+'px',left:G+'px',width:GRID_W+'px',height:gridH+'px',
+     borderTop:'1px solid var(--border-faint)',borderBottom:'1px solid var(--border-faint)',
+     borderLeft:'1px solid var(--border-faint)',borderRight:'1px solid var(--border-faint)'}, grid);
+
+  // Vertical containers — full height
+  [1314,910,708].forEach(w => {
+    D({position:'absolute',top:TOP+'px',left:(G+(GRID_W-w)/2)+'px',width:w+'px',height:gridH+'px',
+       borderLeft:'1px solid var(--border-faint)',borderRight:'1px solid var(--border-faint)'}, grid);
+  });
+
+  // Short vertical containers — top
+  [506,304,102].forEach(w => {
+    D({position:'absolute',top:TOP+'px',left:(G+(GRID_W-w)/2)+'px',width:w+'px',height:'102px',
+       borderLeft:'1px solid var(--border-faint)',borderRight:'1px solid var(--border-faint)'}, grid);
+  });
+  // Short vertical containers — bottom (NEW)
+  [506,304,102].forEach(w => {
+    D({position:'absolute',top:(BOT-102)+'px',left:(G+(GRID_W-w)/2)+'px',width:w+'px',height:'102px',
+       borderLeft:'1px solid var(--border-faint)',borderRight:'1px solid var(--border-faint)'}, grid);
+  });
+
+  // Horizontal full line
+  D({position:'absolute',top:(TOP+101)+'px',left:'0',width:'100%',height:'1px',background:'var(--border-faint)'}, grid);
+
+  // Segments — TOP HALF (6 rows: 100, 201, 302, 403, 504 + extra 0)
+  [0, 101, 202, 303, 404].forEach(relY => {
+    const y = TOP + relY;
+    const w = relY === 0 ? 203 : (relY === 404 ? 203 : 303);
+    const x = relY === 0 ? G + 100 : G;
+    D({position:'absolute',top:y+'px',left:x+'px',width:w+'px',height:'1px',background:'var(--border-faint)'}, grid);
+    D({position:'absolute',top:y+'px',right:x+'px',width:w+'px',height:'1px',background:'var(--border-faint)'}, grid);
+  });
+
+  // Segments — BOTTOM HALF (mirrored from BOT)
+  [0, 101, 202, 303, 404].forEach(relY => {
+    const y = BOT - relY;
+    const w = relY === 0 ? 203 : (relY === 404 ? 203 : 303);
+    const x = relY === 0 ? G + 100 : G;
+    D({position:'absolute',top:y+'px',left:x+'px',width:w+'px',height:'1px',background:'var(--border-faint)'}, grid);
+    D({position:'absolute',top:y+'px',right:x+'px',width:w+'px',height:'1px',background:'var(--border-faint)'}, grid);
+  });
+
+  // Curvy outer
+  curvy(G-101, TOP, 101, gridH, ['br']);
+  curvy(G+GRID_W, TOP, 101, gridH, ['bl']);
+
+  // Curvy corners 102x203
+  curvy(G-1, TOP, 102, 203, ['tl','tr','bl','br']);
+  curvy(G+GRID_W-101, TOP, 102, 203, ['tl','tr','bl','br']);
+  curvy(G-1, BOT-203, 102, 203, ['tl','tr','bl','br']);
+  curvy(G+GRID_W-101, BOT-203, 102, 203, ['tl','tr','bl','br']);
+
+  // 910 & 708 bottom
+  const l910=G+(GRID_W-910)/2, l708=G+(GRID_W-708)/2;
+  curvy(l910, TOP, 910, gridH, ['bl','br']);
+  curvy(l708, TOP, 708, gridH, ['bl','br']);
+
+  // Stop intersections — TOP
+  [0, 101, 202, 303, 404].forEach(relY => {
+    curvy(G-1, TOP+relY, 102, 102, ['tl','tr','bl','br']);
+    curvy(G+GRID_W-101, TOP+relY, 102, 102, ['tl','tr','bl','br']);
+  });
+  // Stop intersections — BOTTOM
+  [0, 101, 202, 303, 404].forEach(relY => {
+    curvy(G-1, BOT-102-relY, 102, 102, ['tl','tr','bl','br']);
+    curvy(G+GRID_W-101, BOT-102-relY, 102, 102, ['tl','tr','bl','br']);
+  });
+
+  // 101-offset — TOP
+  [202, 303, 404].forEach(relY => {
+    curvy(G+101, TOP+relY, 102, 102, ['tl','tr','bl','br']);
+    curvy(G+GRID_W-203, TOP+relY, 102, 102, ['tl','tr','bl','br']);
+  });
+  // 101-offset — BOTTOM
+  [202, 303, 404].forEach(relY => {
+    curvy(G+101, BOT-102-relY, 102, 102, ['tl','tr','bl','br']);
+    curvy(G+GRID_W-203, BOT-102-relY, 102, 102, ['tl','tr','bl','br']);
+  });
+
+  // 101-offset partial — TOP
+  [0, 101].forEach(relY => {
+    curvy(G+101, TOP+relY, 102, 102, ['tl','bl']);
+    curvy(G+GRID_W-203, TOP+relY, 102, 102, ['tr','br']);
+  });
+  // 101-offset partial — BOTTOM
+  [0, 101].forEach(relY => {
+    curvy(G+101, BOT-102-relY, 102, 102, ['tl','bl']);
+    curvy(G+GRID_W-203, BOT-102-relY, 102, 102, ['tr','br']);
+  });
+
+  // 202 offset — TOP
+  curvy(G+202, TOP, 102, 102, ['tl','tr','br']);
+  curvy(G+GRID_W-304, TOP, 102, 102, ['tl','tr','bl']);
+
+  // 303..707 — TOP
+  [303,404,505,606,707].forEach(x => {
+    curvy(G+x, TOP, 102, 102, ['tl','tr','bl','br']);
+    curvy(G+GRID_W-x-102, TOP, 102, 102, ['tl','tr','bl','br']);
+  });
+
+  // 202 offset — BOTTOM
+  const bY = BOT - 102;
+  curvy(G+202, bY, 102, 102, ['tl','tr','br']);
+  curvy(G+GRID_W-304, bY, 102, 102, ['tl','tr','bl']);
+
+  // 303..707 — BOTTOM
+  [303,404,505,606,707].forEach(x => {
+    curvy(G+x, bY, 102, 102, ['tl','tr','bl','br']);
+    curvy(G+GRID_W-x-102, bY, 102, 102, ['tl','tr','bl','br']);
+  });
+
+  // === 3 CROSS BADGES ===
+  const crossPath = 'M24 18C24 21.3137 26.6863 24 30 24H34V25H30C26.6863 25 24 27.6863 24 31V35H23V31C23 27.6863 20.3137 25 17 25H13V24H17C20.3137 24 23 21.3137 23 18V14H24V18Z';
+  function badge(x, y) {
+    const wrap = D({position:'absolute',left:x+'px',top:y+'px',width:'47px',height:'47px',zIndex:'1'}, grid);
+    const svg = E('svg',{width:'47',height:'47',viewBox:'0 0 47 47',fill:'none'});
+    E('path',{d:crossPath,fill:'var(--heat-100)','fill-opacity':'1'},svg);
+    E('circle',{cx:'23.5',cy:'23.5',r:'23',stroke:'#EDEDED','stroke-opacity':'1'},svg);
+    wrap.appendChild(svg);
+  }
+  badge(l708-24, TOP-23);
+  badge(l708+708-23, TOP-23);
+  badge(l708+708-23, BOT-70);
+}
+
+// ===== RESIZE =====
+function resize() {
+  const hero = document.getElementById('hero');
+  const cw = hero.clientWidth, ch = hero.clientHeight, s = Math.min(cw / HERO_W, 1);
+  const TOP = 100;
+  const gridH = Math.max(506, (ch / s) - TOP - 50);
+
+  grid.style.transform = `scale(${s})`; grid.style.transformOrigin = 'top center';
+  grid.style.width = HERO_W + 'px'; grid.style.position = 'absolute'; grid.style.left = '50%'; grid.style.marginLeft = (-HERO_W/2) + 'px'; grid.style.top = '0';
+  grid.style.height = (TOP + gridH + 100) + 'px';
+
+  // Scale canvas too
+  const dpr = 2, canH = Math.max(CANVAS_H, gridH);
+  canvas.width = CANVAS_W * dpr; canvas.height = canH * dpr;
+  canvas.style.width = CANVAS_W + 'px'; canvas.style.height = canH + 'px';
+  canvas.style.transform = `translateX(-50%) scale(${s})`;
+
+  build(TOP, gridH);
+}
+window.addEventListener('resize', resize);
+resize();
+
+})();
+</script>
+</body>
+</html>

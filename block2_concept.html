@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Концепт Блока 2: От каких рисков защищает Техэксперт</title>
+    
+    <!-- Подключаем шрифты Montserrat и Inter для соответствия требованиям -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #F8FAFC;         /* Ультрасветлый холодный серый фон */
+            --card-bg: #FFFFFF;          /* Белоснежные плашки */
+            --accent-color: #FF7200;     /* Фирменный оранжевый */
+            --text-main: #1E293B;        /* Глубокий темно-серый для заголовков */
+            --text-muted: #475569;       /* Slate для основного текста */
+            --border-faint: #E2E8F0;     /* Очень тонкие границы */
+            --border-faint-active: rgba(255, 114, 0, 0.2);
+            --grid-line-color: rgba(226, 232, 240, 0.4);
+            
+            --font-headers: 'Montserrat', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: var(--font-body);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Заголовки и вводная часть блока */
+        .section-header {
+            max-width: 800px;
+            margin: 80px auto 40px auto;
+            text-align: center;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-headers);
+            font-weight: 500;
+            font-size: 40px;
+            line-height: 1.2;
+            color: var(--text-main);
+            margin-bottom: 20px;
+        }
+
+        .section-header h2 span {
+            color: var(--accent-color);
+        }
+
+        .section-header p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        /* Общий контейнер секции скролла */
+        .risks-section {
+            position: relative;
+            width: 100%;
+            /* Высота рассчитывается так, чтобы дать свободное пространство для прокрутки 4 карточек */
+            min-height: 380vh; 
+            padding-bottom: 10vh;
+        }
+
+        /* Липкая обертка для сетки и фоновой графики */
+        .fixed-bg-wrapper {
+            position: sticky;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            pointer-events: none; /* Пропускаем клики к карточкам */
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        /* --- ДЕЛИКАТНАЯ ТЕХНИЧЕСКАЯ СЕТКА --- */
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            background-size: 100px 100px;
+            background-image: 
+                linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
+            opacity: 0.85;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Точки пересечения (маркеры) на сетке */
+        .grid-marker {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0.35;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Рисуем маленький плюсик/звездочку */
+        .grid-marker::before, .grid-marker::after {
+            content: '';
+            position: absolute;
+            background-color: var(--text-muted);
+            transition: background-color 0.4s ease;
+        }
+        .grid-marker::before {
+            top: 4px; left: 0; width: 9px; height: 1px;
+        }
+        .grid-marker::after {
+            left: 4px; top: 0; width: 1px; height: 9px;
+        }
+
+        /* Активные маркеры светятся оранжевым при скролле */
+        .grid-marker.active-spark {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.4);
+        }
+        .grid-marker.active-spark::before, .grid-marker.active-spark::after {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-color);
+        }
+
+        /* --- ИНТЕРАКТИВНЫЕ SVG ЧЕРТЕЖИ --- */
+        .graphics-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-right: 5vw;
+        }
+
+        .graphic-wrapper {
+            position: absolute;
+            width: 420px;
+            height: 420px;
+            opacity: 0;
+            transform: scale(0.9) rotate(-5deg);
+            transition: 
+                opacity 0.7s cubic-bezier(0.25, 1, 0.5, 1),
+                transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .graphic-wrapper.active {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        /* Стилизация SVG чертежей */
+        .tech-blueprint {
+            width: 100%;
+            height: 100%;
+        }
+
+        .tech-blueprint .grid-line {
+            stroke: var(--border-faint);
+            stroke-width: 0.5;
+            stroke-dasharray: 2 4;
+        }
+
+        .tech-blueprint .main-line {
+            stroke: #94A3B8;
+            stroke-width: 1;
+            fill: none;
+            transition: stroke 0.4s ease;
+        }
+
+        .tech-blueprint .accent-line {
+            stroke: var(--accent-color);
+            stroke-width: 1.5;
+            fill: none;
+            stroke-dasharray: 600;
+            stroke-dashoffset: 600;
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .graphic-wrapper.active .tech-blueprint .accent-line {
+            stroke-dashoffset: 0;
+        }
+
+        .tech-blueprint text {
+            font-family: var(--font-body);
+            font-size: 8px;
+            fill: #94A3B8;
+            letter-spacing: 0.5px;
+        }
+
+        .tech-blueprint .pulse-node {
+            fill: var(--accent-color);
+            animation: pulse-dot 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(2.2); opacity: 1; }
+        }
+
+        /* --- СТЭК КАРТОЧЕК --- */
+        .cards-stack-container {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            z-index: 2; /* Поверх фоновой графики */
+            display: flex;
+            flex-direction: row;
+        }
+
+        .cards-column {
+            width: 55%; /* Карточки занимают левую часть экрана */
+            padding-top: 10vh;
+        }
+
+        .card-item {
+            position: sticky;
+            top: 22vh; /* Высота прилипания */
+            width: 100%;
+            max-width: 680px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-faint);
+            border-radius: 16px;
+            padding: 48px;
+            margin-bottom: 45vh; /* Расстояние между карточками во время скролла */
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.02), 0 1px 3px rgba(15, 23, 42, 0.01);
+            transition: 
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            transform-origin: center top;
+        }
+
+        /* Чтобы последняя карточка не улетала далеко */
+        .card-item:last-child {
+            margin-bottom: 15vh;
+        }
+
+        /* Элемент окна сверху слева (mac-style, но технический) */
+        .card-window-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 30px;
+        }
+
+        .window-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid var(--border-faint);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Первый кружок с оранжевой искрой */
+        .window-dot:first-child::before {
+            content: '';
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+        }
+
+        /* Двухколоночный макет внутри карточки */
+        .card-content-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 600px) {
+            .card-content-grid {
+                grid-template-columns: 1.1fr 1.3fr;
+                gap: 32px;
+                align-items: start;
+            }
+        }
+
+        .card-title-col h3 {
+            font-family: var(--font-headers);
+            font-weight: 500;
+            font-size: 24px;
+            line-height: 1.3;
+            color: var(--text-main);
+        }
+
+        .card-desc-col p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        /* Класс, применяемый через JS к карточкам, которые оказались "под" текущим стэком */
+        .card-item.stacked-under {
+            transform: scale(0.96) translateY(-20px);
+            opacity: 0.65;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.01);
+        }
+
+        /* Мобильный вид для SVG картинок (они внедряются прямо в карточку на узких экранах) */
+        .mobile-graphic-placeholder {
+            display: none;
+            width: 100%;
+            max-width: 280px;
+            height: 200px;
+            margin: 20px auto 0 auto;
+        }
+
+        /* --- АДАПТИВНОСТЬ --- */
+        @media (max-width: 1024px) {
+            .cards-stack-container {
+                flex-direction: column;
+            }
+
+            .cards-column {
+                width: 100%;
+                max-width: 700px;
+                margin: 0 auto;
+                padding-top: 5vh;
+            }
+
+            /* Скрываем фиксированную правую графику на планшетах/мобильных */
+            .graphics-container {
+                display: none;
+            }
+
+            .fixed-bg-wrapper {
+                height: 100%;
+                position: absolute;
+            }
+
+            /* Показываем графику прямо внутри карточки */
+            .mobile-graphic-placeholder {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .card-item {
+                position: relative; /* На мобильных карточки скроллятся обычно */
+                top: 0;
+                margin-bottom: 30px;
+            }
+
+            .risks-section {
+                min-height: auto;
+            }
+        }
+
+        /* Медленное вращение шестеренок */
+        .rotator-slow {
+            transform-origin: 200px 200px;
+            animation: rotate-clockwise 30s linear infinite;
+        }
+        .rotator-slow-ccw {
+            transform-origin: 200px 200px;
+            animation: rotate-counterclockwise 25s linear infinite;
+        }
+
+        .rotator-gear-inner {
+            transform-origin: 200px 220px;
+            animation: rotate-clockwise 15s linear infinite;
+        }
+
+        .radar-sweep {
+            transform-origin: 200px 200px;
+            animation: rotate-clockwise 8s linear infinite;
+        }
+
+        @keyframes rotate-clockwise {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes rotate-counterclockwise {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка секции -->
+    <div class="section-header">
+        <h2>От каких рисков защищает <span>Техэксперт</span></h2>
+        <p>Ошибки в работе с нормативами незаметны в процессе, но оборачиваются финансовыми потерями и штрафами на финальных этапах</p>
+    </div>
+
+    <!-- Основная секция скролла -->
+    <div class="risks-section" id="risks-sec">
+        
+        <!-- Липкий фоновый слой (Сетка + SVG схемы) -->
+        <div class="fixed-bg-wrapper">
+            <!-- Деликатная сетка -->
+            <div class="bg-grid" id="bg-grid">
+                <!-- Маркеры сетки (будут расставлены скриптом на пересечениях 100px) -->
+            </div>
+            
+            <!-- Правый контейнер для чертежей (только десктоп) -->
+            <div class="graphics-container" id="blueprints-desktop">
+                
+                <!-- СХЕМА 1: Время и поиск -->
+                <div class="graphic-wrapper" id="blueprint-0">
+                    <svg class="tech-blueprint" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Сетка чертежа -->
+                        <circle cx="200" cy="200" r="160" stroke="#E2E8F0" stroke-width="0.5" stroke-dasharray="2 4"/>
+                        <circle cx="200" cy="200" r="120" stroke="#E2E8F0" stroke-width="0.5"/>
+                        <line x1="200" y1="40" x2="200" y2="360" class="grid-line"/>
+                        <line x1="40" y1="200" x2="360" y2="200" class="grid-line"/>
+                        
+                        <!-- Хронометр / Радар (Вращающийся) -->
+                        <g class="radar-sweep">
+                            <line x1="200" y1="200" x2="280" y2="120" stroke="var(--accent-color)" stroke-width="1.5" stroke-linecap="round"/>
+                            <polygon points="200,200 280,120 300,150 200,200" fill="rgba(255, 114, 0, 0.05)" stroke="none"/>
+                        </g>
+
+                        <!-- Шестеренки (Вращающиеся) -->
+                        <g class="rotator-slow" style="transform-origin: 200px 200px;">
+                            <!-- Внешний зубчатый лимб -->
+                            <circle cx="200" cy="200" r="90" class="main-line" stroke-dasharray="6 3"/>
+                            <!-- Зубья шестеренки -->
+                            <path d="M 200 100 L 200 110 M 250 113 L 243 120 M 287 150 L 278 155 M 300 200 L 290 200 M 287 250 L 278 245 M 250 287 L 243 280 M 200 300 L 200 290" stroke="#94A3B8" stroke-width="1.5"/>
+                        </g>
+                        
+                        <g class="rotator-slow-ccw" style="transform-origin: 140px 140px;">
+                            <circle cx="140" cy="140" r="30" class="main-line" stroke-dasharray="4 2"/>
+                        </g>
+
+                        <!-- Инженерные замеры и текст -->
+                        <path d="M 200 200 L 320 200" class="main-line"/>
+                        <path d="M 320 195 L 320 205" class="main-line"/>
+                        <text x="210" y="190">SCANNING CHRONO [t_max = 30%]</text>
+                        <text x="210" y="215">DOC_SEARCH_RAY_01</text>
+                        <text x="80" y="320">GOST R / SP / ISO</text>
+                        <text x="80" y="335">REF_INDEX_ERR</text>
+
+                        <!-- Прорисовывающиеся оранжевые акцентные линии -->
+                        <path d="M 200 200 A 120 120 0 0 1 320 200" class="accent-line"/>
+                        <path d="M 90 200 L 70 200 L 70 250 L 120 250" class="accent-line"/>
+                        
+                        <!-- Пульсирующие узлы -->
+                        <g transform="translate(320, 200)"><circle cx="0" cy="0" r="3" class="pulse-node"/></g>
+                        <g transform="translate(70, 250)"><circle cx="0" cy="0" r="3" class="pulse-node"/></g>
+                    </svg>
+                </div>
+
+                <!-- СХЕМА 2: Штрафы и законы -->
+                <div class="graphic-wrapper" id="blueprint-1">
+                    <svg class="tech-blueprint" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Сетка чертежа -->
+                        <circle cx="200" cy="200" r="160" stroke="#E2E8F0" stroke-width="0.5" stroke-dasharray="4 8"/>
+                        <line x1="200" y1="40" x2="200" y2="360" class="grid-line"/>
+                        <line x1="40" y1="200" x2="360" y2="200" class="grid-line"/>
+                        
+                        <!-- Гербовая печать / Соответствие -->
+                        <circle cx="200" cy="180" r="70" class="main-line"/>
+                        <circle cx="200" cy="180" r="65" class="main-line" stroke-dasharray="2 2"/>
+                        <polygon points="200,135 215,165 248,165 220,185 232,218 200,198 168,218 180,185 152,165 185,165" class="main-line"/>
+                        
+                        <!-- Весы правосудия (Технический стиль) -->
+                        <line x1="110" y1="270" x2="290" y2="270" class="main-line" stroke-width="2"/>
+                        <line x1="200" y1="180" x2="200" y2="270" class="main-line"/>
+                        
+                        <!-- Левая чаша -->
+                        <line x1="110" y1="270" x2="90" y2="310" class="main-line"/>
+                        <line x1="110" y1="270" x2="130" y2="310" class="main-line"/>
+                        <path d="M 85 310 L 135 310" class="main-line" stroke-width="1.5"/>
+                        
+                        <!-- Правая чаша (перевешивает риски) -->
+                        <line x1="290" y1="270" x2="270" y2="320" class="main-line"/>
+                        <line x1="290" y1="270" x2="310" y2="320" class="main-line"/>
+                        <path d="M 265 320 L 315 320" class="main-line" stroke-width="1.5"/>
+
+                        <text x="210" y="100">COMPLIANCE_STATUS</text>
+                        <text x="210" y="115">FINE_PROBABILITY [98%]</text>
+                        <text x="60" y="90">REG. RULES: OSHA / FIRE</text>
+                        <text x="60" y="105">SECTOR_CHECK_02</text>
+
+                        <!-- Оранжевая прорисовка: Контур щита и весов -->
+                        <path d="M 200 60 C 270 60 300 90 300 150 C 300 240 200 300 200 330 C 200 300 100 240 100 150 C 100 90 130 60 200 60 Z" class="accent-line"/>
+                        <path d="M 290 270 L 290 320" class="accent-line"/>
+                        
+                        <!-- Пульсирующие узлы -->
+                        <g transform="translate(200, 60)"><circle cx="0" cy="0" r="3" class="pulse-node"/></g>
+                        <g transform="translate(200, 330)"><circle cx="0" cy="0" r="3" class="pulse-node"/></g>
+                    </svg>
+                </div>
+
+                <!-- СХЕМА 3: Брак и срыв сроков -->
+                <div class="graphic-wrapper" id="blueprint-2">
+                    <svg class="tech-blueprint" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Сетка чертежа -->
+                        <circle cx="200" cy="200" r="160" stroke="#E2E8F0" stroke-width="0.5" stroke-dasharray="3 3"/>
+                        <line x1="200" y1="40" x2="200" y2="360" class="grid-line"/>
+                        <line x1="40" y1="200" x2="360" y2="200" class="grid-line"/>
+
+                        <!-- Деталь (вал с зубьями) -->
+                        <rect x="140" y="180" width="120" height="40" class="main-line" rx="2"/>
+                        <circle cx="200" cy="200" r="50" class="main-line" stroke-dasharray="8 4"/>
+                        <circle cx="200" cy="200" r="30" class="main-line"/>
+
+                        <!-- Штангенциркуль (Сверху измеряет деталь) -->
+                        <g transform="translate(0, -10)">
+                            <!-- Штанга -->
+                            <rect x="70" y="110" width="260" height="15" class="main-line" rx="1"/>
+                            <!-- Деления на штанге -->
+                            <path d="M 90 110 L 90 115 M 100 110 L 100 118 M 110 110 L 110 115 M 120 110 L 120 115 M 130 110 L 130 115 M 140 110 L 140 118 M 150 110 L 150 115 M 160 110 L 160 115 M 170 110 L 170 115 M 180 110 L 180 118 M 190 110 L 190 115 M 200 110 L 200 115 M 210 110 L 210 115 M 220 110 L 220 118 M 230 110 L 230 115 M 240 110 L 240 115 M 250 110 L 250 115 M 260 110 L 260 118 M 270 110 L 270 115 M 280 110 L 280 115 M 290 110 L 290 115 M 300 110 L 300 118" stroke="#94A3B8" stroke-width="0.8"/>
+                            <!-- Неподвижная губка -->
+                            <path d="M 70 110 L 70 210 L 90 210 L 90 125" class="main-line"/>
+                            <!-- Подвижная нониусная рамка -->
+                            <rect x="230" y="105" width="40" height="25" class="main-line" fill="rgba(248, 250, 252, 0.9)" rx="1"/>
+                            <!-- Подвижная губка -->
+                            <path d="M 230 110 L 230 210 L 210 210 L 210 125" class="main-line"/>
+                        </g>
+
+                        <!-- Размерные стрелки и допуски -->
+                        <line x1="90" y1="240" x2="210" y2="240" stroke="var(--accent-color)" stroke-width="1"/>
+                        <polygon points="90,240 96,236 96,244" fill="var(--accent-color)"/>
+                        <polygon points="210,240 204,236 204,244" fill="var(--accent-color)"/>
+                        
+                        <text x="110" y="255" fill="var(--accent-color)">d = 120.00 mm (REQ: 120.25)</text>
+                        <text x="260" y="80">TOLERANCE EXCEEDED</text>
+                        <text x="260" y="95">ERROR_REF: GOST 2.109</text>
+                        <text x="60" y="320">PRODUCTION_FAIL_RATE [high]</text>
+                        
+                        <!-- Оранжевая прорисовка: Контур отклонения и выноски -->
+                        <path d="M 210 200 L 210 240 M 90 200 L 90 240" class="accent-line"/>
+                        <circle cx="210" cy="200" r="6" class="accent-line" stroke-width="1.5"/>
+
+                        <!-- Пульсирующие узлы -->
+                        <g transform="translate(90, 240)"><circle cx="0" cy="0" r="3" class="pulse-node"/></g>
+                        <g transform="translate(210, 240)"><circle cx="0" cy="0" r="3" class="pulse-node"/></g>
+                    </svg>
+                </div>
+
+                <!-- СХЕМА 4: Перерасход смет -->
+                <div class="graphic-wrapper" id="blueprint-3">
+                    <svg class="tech-blueprint" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Сетка чертежа -->
+                        <line x1="50" y1="50" x2="350" y2="350" class="grid-line"/>
+                        <line x1="350" y1="50" x2="50" y2="350" class="grid-line"/>
+                        <line x1="200" y1="40" x2="200" y2="360" class="grid-line"/>
+                        <line x1="40" y1="200" x2="360" y2="200" class="grid-line"/>
+
+                        <!-- Трехмерная изометрическая координатная сетка -->
+                        <!-- Оси -->
+                        <path d="M 200 300 L 320 230 M 200 300 L 80 230 M 200 300 L 200 100" class="main-line" stroke-width="1.5"/>
+                        
+                        <!-- /Блоки/гистограммы (изометрия) -->
+                        <!-- Блок 1 (левый) -->
+                        <path d="M 120 250 L 150 233 L 150 183 L 120 200 Z" class="main-line"/>
+                        <path d="M 150 233 L 180 216 L 180 166 L 150 183 Z" class="main-line"/>
+                        <path d="M 120 200 L 150 183 L 180 166 L 150 183" class="main-line"/>
+                        
+                        <!-- Блок 2 (правый, более высокий - символизирует перерасход) -->
+                        <path d="M 230 250 L 260 233 L 260 123 L 230 140 Z" class="main-line"/>
+                        <path d="M 260 233 L 290 216 L 290 106 L 260 123 Z" class="main-line"/>
+                        <path d="M 230 140 L 260 123 L 290 106 L 260 123" class="main-line"/>
+
+                        <!-- График падения окупаемости -->
+                        <path d="M 80 150 L 150 160 L 220 210 L 290 270" class="main-line" stroke-width="1" stroke-dasharray="3 3"/>
+
+                        <text x="280" y="80">BUDGET_OVERRUN</text>
+                        <text x="280" y="95">OVERSPEND: +35%</text>
+                        <text x="40" y="80">ROI_ESTIMATE_DECLINE</text>
+                        <text x="40" y="95">MATERIAL_MISMATCH</text>
+
+                        <!-- Оранжевая прорисовка: Кривая роста расходов -->
+                        <path d="M 80 270 Q 150 220 230 140 T 320 80" class="accent-line" stroke-width="2"/>
+                        
+                        <!-- Пульсирующие узлы -->
+                        <g transform="translate(230, 140)"><circle cx="0" cy="0" r="3.5" class="pulse-node"/></g>
+                        <g transform="translate(320, 80)"><circle cx="0" cy="0" r="3.5" class="pulse-node"/></g>
+                    </svg>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Контентный слой с карточками (Desktop и Mobile) -->
+        <div class="cards-stack-container">
+            <div class="cards-column" id="cards-container">
+                
+                <!-- КАРТОЧКА 1 -->
+                <div class="card-item" data-index="0">
+                    <div class="card-window-header">
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                    </div>
+                    
+                    <div class="card-content-grid">
+                        <div class="card-title-col">
+                            <h3>Потеря до 30% рабочего времени</h3>
+                        </div>
+                        <div class="card-desc-col">
+                            <p>Инженеры и профильные специалисты вместо выполнения коммерческих контрактов часами ищут изменения в стандартах и вручную сверяют редакции документов. Предприятие оплачивает ручной поиск вместо реальной проектной работы.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Резервное место под SVG для планшетов и мобильных -->
+                    <div class="mobile-graphic-placeholder" id="mobile-blueprint-0"></div>
+                </div>
+
+                <!-- КАРТОЧКА 2 -->
+                <div class="card-item" data-index="1">
+                    <div class="card-window-header">
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                    </div>
+                    
+                    <div class="card-content-grid">
+                        <div class="card-title-col">
+                            <h3>Штрафы и юридические риски</h3>
+                        </div>
+                        <div class="card-desc-col">
+                            <p>Несвоевременное обновление локальных инструкций по охране труда и пожарной безопасности или пропущенный инструктаж ведут к прямым предписаниям надзорных органов и крупным штрафам за каждого сотрудника.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mobile-graphic-placeholder" id="mobile-blueprint-1"></div>
+                </div>
+
+                <!-- КАРТОЧКА 3 -->
+                <div class="card-item" data-index="2">
+                    <div class="card-window-header">
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                    </div>
+                    
+                    <div class="card-content-grid">
+                        <div class="card-title-col">
+                            <h3>Брак и срыв сроков</h3>
+                        </div>
+                        <div class="card-desc-col">
+                            <p>Специалисты используют ГОСТы, СП, СНиП и регламенты без гарантии актуальности на сегодняшний день. При сдаче работы заказчику или ведомственной проверке приходится полностью переделывать узлы и сдвигать сроки сдачи.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mobile-graphic-placeholder" id="mobile-blueprint-2"></div>
+                </div>
+
+                <!-- КАРТОЧКА 4 -->
+                <div class="card-item" data-index="3">
+                    <div class="card-window-header">
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                        <div class="window-dot"></div>
+                    </div>
+                    
+                    <div class="card-content-grid">
+                        <div class="card-title-col">
+                            <h3>Перерасход смет и снижение окупаемости</h3>
+                        </div>
+                        <div class="card-desc-col">
+                            <p>Без единой информационной базы проектировщики и закупщики используют разные редакции стандартов. Снабжение заказывает не те марки материалов, и предприятию приходится срочно докупать нужное, неся прямые убытки.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mobile-graphic-placeholder" id="mobile-blueprint-3"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Разделительный блок для демонстрации прокрутки -->
+    <div style="height: 100vh; background-color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <p style="color: #94A3B8; font-family: var(--font-headers);">Дальнейший контент сайта...</p>
+    </div>
+
+    <!-- СКРИПТ УПРАВЛЕНИЯ С КАРТОЧКАМИ И ФОНОМ -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // --- 1. ГЕНЕРАЦИЯ ИНЖЕНЕРНОЙ СЕТКИ ---
+            const bgGrid = document.getElementById("bg-grid");
+            
+            // Расставляем интерактивные маркеры (плюсики) на пересечениях 100px
+            // Создаем сетку в центральной части экрана
+            const markerPositions = [
+                { top: '20%', left: '15%' },
+                { top: '20%', left: '45%' },
+                { top: '50%', left: '25%' },
+                { top: '50%', left: '80%' },
+                { top: '80%', left: '15%' },
+                { top: '80%', left: '60%' },
+                { top: '35%', left: '70%' },
+                { top: '70%', left: '35%' }
+            ];
+
+            const createdMarkers = [];
+            markerPositions.forEach(pos => {
+                const marker = document.createElement("div");
+                marker.className = "grid-marker";
+                marker.style.top = pos.top;
+                marker.style.left = pos.left;
+                bgGrid.appendChild(marker);
+                createdMarkers.push(marker);
+            });
+
+            // --- 2. ПЕРЕНОС SVG НА МОБИЛЬНЫЕ (АДАПТИВНОСТЬ) ---
+            // Если экран мобильный, мы клонируем SVG из десктопного контейнера в карточки
+            const checkResponsiveLayout = () => {
+                const isMobile = window.innerWidth <= 1024;
+                for (let i = 0; i < 4; i++) {
+                    const desktopWrapper = document.getElementById(`blueprint-${i}`);
+                    const mobilePlaceholder = document.getElementById(`mobile-blueprint-${i}`);
+                    
+                    if (isMobile && mobilePlaceholder && mobilePlaceholder.children.length === 0) {
+                        const svg = desktopWrapper.querySelector("svg");
+                        if (svg) {
+                            const clonedSvg = svg.cloneNode(true);
+                            mobilePlaceholder.appendChild(clonedSvg);
+                        }
+                    }
+                }
+            };
+            
+            checkResponsiveLayout();
+            window.addEventListener("resize", checkResponsiveLayout);
+
+            // --- 3. ИНТЕРАКТИВНЫЙ СКРОЛЛ ЧЕРЕЗ INTERSECTION OBSERVER ---
+            const cards = document.querySelectorAll(".card-item");
+            const graphicWrappers = document.querySelectorAll(".graphic-wrapper");
+            
+            // Настройки observer: срабатывает, когда карточка занимает центральную область экрана
+            const observerOptions = {
+                root: null,
+                rootMargin: "-25% 0px -25% 0px", // Зона фокуса в центре экрана
+                threshold: 0.2
+            };
+
+            const observerCallback = (entries) => {
+                entries.forEach(entry => {
+                    const index = entry.target.getAttribute("data-index");
+                    if (!index) return;
+                    const indexInt = parseInt(index);
+                    
+                    if (entry.isIntersecting) {
+                        // 1. Активируем соответствующий фоновый чертеж
+                        graphicWrappers.forEach((gw, idx) => {
+                            if (idx === indexInt) {
+                                gw.classList.add("active");
+                            } else {
+                                gw.classList.remove("active");
+                            }
+                        });
+
+                        // 2. Визуально подсвечиваем активную карточку и сжимаем предыдущие (эффект стопки)
+                        cards.forEach((card, idx) => {
+                            if (idx < indexInt) {
+                                card.classList.add("stacked-under");
+                            } else {
+                                card.classList.remove("stacked-under");
+                            }
+                        });
+
+                        // 3. Анимируем маркеры на фоне (плюсики начинают светиться оранжевым)
+                        createdMarkers.forEach((marker, mIdx) => {
+                            // Активируем случайные маркеры в зависимости от активного экрана
+                            const shouldActivate = (mIdx + indexInt) % 3 === 0;
+                            if (shouldActivate) {
+                                marker.classList.add("active-spark");
+                            } else {
+                                marker.classList.remove("active-spark");
+                            }
+                        });
+                    }
+                });
+            };
+
+            const observer = new IntersectionObserver(observerCallback, observerOptions);
+            cards.forEach(card => observer.observe(card));
+        });
+    </script>
+</body>
+</html>

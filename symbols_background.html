@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вихревой фон бегущих символов (Сетка с бегущей волной)</title>
+    <!--
+    ИНСТРУКЦИЯ ПО ИНТЕГРАЦИИ В TILDA:
+    1. Настройте фон на этой странице с помощью панели управления справа.
+    2. Нажмите кнопку "Скопировать код для Tilda".
+    3. Создайте на Tilda блок T123 (HTML/код).
+    4. Вставьте скопированный код туда.
+    -->
+    <style>
+        :root {
+            /* === НАСТРОЙКИ ПО УМОЛЧАНИЮ === */
+            --bg-color: #FBFBFB;
+            --symbols-color: #8E9CAE;
+            --symbols-opacity: 0.28;
+            --symbols-font-size: 7px;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .bg-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg-color);
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Элегантная панель настроек в стиле Glassmorphism */
+        .config-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(20px) saturate(140%);
+            -webkit-backdrop-filter: blur(20px) saturate(140%);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            color: #1E293B;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding-bottom: 10px;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0F172A;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748B;
+            transition: background 0.2s;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: #0F172A;
+        }
+
+        .config-group {
+            margin-bottom: 16px;
+        }
+
+        .config-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: #475569;
+        }
+
+        .config-group label span.value {
+            font-weight: 600;
+            color: #FF7200;
+        }
+
+        .config-group input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #E2E8F0;
+            outline: none;
+        }
+
+        .config-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #FF7200;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .config-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .config-group input[type="color"] {
+            width: 100%;
+            height: 36px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            cursor: pointer;
+            background: none;
+            padding: 2px;
+        }
+
+        .button-group {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #FF7200;
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 114, 0, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #E06400;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(255, 114, 0, 0.3);
+        }
+
+        .btn-secondary {
+            background: #F1F5F9;
+            color: #475569;
+            border: 1px solid #E2E8F0;
+        }
+
+        .btn-secondary:hover {
+            background: #E2E8F0;
+            color: #0F172A;
+        }
+
+        /* Уведомление о копировании */
+        .toast {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #0F172A;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Кнопка плавающего переключателя при скрытой панели */
+        .floating-gear {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9;
+            transition: all 0.2s;
+            color: #475569;
+        }
+
+        .floating-gear:hover {
+            transform: rotate(45deg) scale(1.05);
+            color: #FF7200;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-container" id="bg-container">
+        <!-- Канвас для отрисовки вихря -->
+        <canvas id="vortex-canvas"></canvas>
+
+        <!-- Вспомогательная кнопка шестеренки (когда панель скрыта) -->
+        <button class="floating-gear hidden" id="floating-gear" title="Открыть настройки">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+
+        <!-- Настройки генератора -->
+        <div class="config-panel" id="config-panel">
+            <div class="panel-header">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Настройки вихря
+                </h3>
+                <button class="toggle-btn" id="hide-panel-btn" title="Скрыть панель">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+
+            <!-- Шаг сетки (gridStep) -->
+            <div class="config-group">
+                <label>Интервал сетки: <span class="value" id="val-gridStep">14px</span></label>
+                <input type="range" id="param-gridStep" min="10" max="25" step="1" value="14">
+            </div>
+
+            <!-- Количество рукавов спирали -->
+            <div class="config-group">
+                <label>Рукава вихря: <span class="value" id="val-arms">3</span></label>
+                <input type="range" id="param-arms" min="1" max="8" step="1" value="3">
+            </div>
+
+            <!-- Частота волн (waveFreq) -->
+            <div class="config-group">
+                <label>Частота волн: <span class="value" id="val-waveFreq">0.015</span></label>
+                <input type="range" id="param-waveFreq" min="0.005" max="0.040" step="0.001" value="0.015">
+            </div>
+
+            <!-- Скорость вращения / волны -->
+            <div class="config-group">
+                <label>Скорость анимации: <span class="value" id="val-waveSpeed">2.5</span></label>
+                <input type="range" id="param-waveSpeed" min="0.5" max="6.0" step="0.2" value="2.5">
+            </div>
+
+            <!-- Контрастность (contrast) -->
+            <div class="config-group">
+                <label>Тонкость линий (контраст): <span class="value" id="val-contrast">5.0</span></label>
+                <input type="range" id="param-contrast" min="1.0" max="10.0" step="0.5" value="5.0">
+            </div>
+
+            <!-- Порог отсечения (threshold) -->
+            <div class="config-group">
+                <label>Плотность (порог): <span class="value" id="val-threshold">0.25</span></label>
+                <input type="range" id="param-threshold" min="0.05" max="0.60" step="0.05" value="0.25">
+            </div>
+
+            <!-- Искажение сетки (jitter) -->
+            <div class="config-group">
+                <label>Хаотичность (jitter): <span class="value" id="val-jitter">2.0px</span></label>
+                <input type="range" id="param-jitter" min="0.0" max="8.0" step="0.5" value="2.0">
+            </div>
+
+            <!-- Кривизна расширения (radialPower) -->
+            <div class="config-group">
+                <label>Форма расширения: <span class="value" id="val-radPower">0.8</span></label>
+                <input type="range" id="param-radPower" min="0.5" max="1.5" step="0.05" value="0.8">
+            </div>
+
+            <!-- Размер шрифта -->
+            <div class="config-group">
+                <label>Размер символов: <span class="value" id="val-fontSize">7px</span></label>
+                <input type="range" id="param-fontSize" min="4" max="15" step="1" value="7">
+            </div>
+
+            <!-- Максимальная прозрачность -->
+            <div class="config-group">
+                <label>Прозрачность символов: <span class="value" id="val-maxOpacity">28%</span></label>
+                <input type="range" id="param-maxOpacity" min="5" max="80" step="5" value="28">
+            </div>
+
+            <!-- Радиус чистой зоны в центре -->
+            <div class="config-group">
+                <label>Чистая зона в центре: <span class="value" id="val-centerVoid">120px</span></label>
+                <input type="range" id="param-centerVoid" min="0" max="300" step="10" value="120">
+            </div>
+
+            <!-- Цвет символов -->
+            <div class="config-group">
+                <label>Цвет символов</label>
+                <input type="color" id="param-color" value="#8E9CAE">
+            </div>
+
+            <!-- Цвет фона -->
+            <div class="config-group">
+                <label>Цвет фона</label>
+                <input type="color" id="param-bg" value="#FBFBFB">
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" id="copy-tilda-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Скопировать код для Tilda
+                </button>
+                <button class="btn btn-secondary" id="hide-ui-completely-btn">
+                    Скрыть интерфейс полностью
+                </button>
+            </div>
+        </div>
+
+        <!-- Уведомление об успешном действии -->
+        <div class="toast" id="toast">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Код успешно скопирован в буфер!
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('vortex-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('bg-container');
+        
+        // Элементы интерфейса
+        const configPanel = document.getElementById('config-panel');
+        const hidePanelBtn = document.getElementById('hide-panel-btn');
+        const floatingGear = document.getElementById('floating-gear');
+        const copyTildaBtn = document.getElementById('copy-tilda-btn');
+        const hideUiCompletelyBtn = document.getElementById('hide-ui-completely-btn');
+        const toast = document.getElementById('toast');
+
+        // Инициализация параметров по умолчанию
+        const params = {
+            gridStep: 14,
+            numArms: 3,
+            waveFreq: 0.015,
+            waveSpeed: 2.5,  // Коэффициент умножения времени
+            contrast: 5.0,
+            threshold: 0.25,
+            jitter: 2.0,
+            radialPower: 0.8,
+            fontSize: 7,
+            maxOpacity: 0.28,
+            centerVoid: 120,
+            color: '#8E9CAE',
+            bgColor: '#FBFBFB'
+        };
+
+        // Связываем слайдеры с объектом параметров
+        const bindings = [
+            { id: 'param-gridStep', key: 'gridStep', labelId: 'val-gridStep', format: v => `${v}px` },
+            { id: 'param-arms', key: 'numArms', labelId: 'val-arms', format: v => v },
+            { id: 'param-waveFreq', key: 'waveFreq', labelId: 'val-waveFreq', format: v => Number(v).toFixed(3) },
+            { id: 'param-waveSpeed', key: 'waveSpeed', labelId: 'val-waveSpeed', format: v => Number(v).toFixed(1) },
+            { id: 'param-contrast', key: 'contrast', labelId: 'val-contrast', format: v => Number(v).toFixed(1) },
+            { id: 'param-threshold', key: 'threshold', labelId: 'val-threshold', format: v => Number(v).toFixed(2) },
+            { id: 'param-jitter', key: 'jitter', labelId: 'val-jitter', format: v => `${Number(v).toFixed(1)}px` },
+            { id: 'param-radPower', key: 'radialPower', labelId: 'val-radPower', format: v => Number(v).toFixed(2) },
+            { id: 'param-fontSize', key: 'fontSize', labelId: 'val-fontSize', format: v => `${v}px` },
+            { id: 'param-maxOpacity', key: 'maxOpacity', labelId: 'val-maxOpacity', format: v => `${v}%`, transform: v => v / 100 },
+            { id: 'param-centerVoid', key: 'centerVoid', labelId: 'val-centerVoid', format: v => `${v}px` }
+        ];
+
+        bindings.forEach(b => {
+            const input = document.getElementById(b.id);
+            const label = document.getElementById(b.labelId);
+            
+            // Начальная установка
+            let initVal = params[b.key];
+            if (b.transform) {
+                if (b.id === 'param-maxOpacity') initVal = params.maxOpacity * 100;
+            }
+            input.value = initVal;
+            if (label) label.textContent = b.format(input.value);
+
+            input.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                params[b.key] = b.transform ? b.transform(val) : val;
+                if (label) label.textContent = b.format(val);
+            });
+        });
+
+        // Цвет символов и фона
+        const colorInput = document.getElementById('param-color');
+        const bgInput = document.getElementById('param-bg');
+
+        colorInput.addEventListener('input', (e) => {
+            params.color = e.target.value;
+            document.documentElement.style.setProperty('--symbols-color', params.color);
+        });
+        bgInput.addEventListener('input', (e) => {
+            params.bgColor = e.target.value;
+            container.style.backgroundColor = params.bgColor;
+            document.documentElement.style.setProperty('--bg-color', params.bgColor);
+        });
+
+        // Подстройка размеров канваса под DPI дисплея
+        function resize() {
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Главный цикл анимации
+        let lastTime = performance.now();
+        let animTime = 0;
+
+        function animate(now) {
+            const dt = (now - lastTime) * 0.001; // Переводим в секунды
+            lastTime = now;
+            
+            // Увеличиваем внутреннее время анимации с учетом регулировки скорости
+            animTime += dt * params.waveSpeed;
+
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.width / dpr;
+            const h = canvas.height / dpr;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            // Очистка экрана
+            ctx.clearRect(0, 0, w, h);
+
+            // Настройка стилей отрисовки
+            ctx.font = `${params.fontSize}px monospace`;
+            ctx.fillStyle = params.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const step = params.gridStep;
+
+            // Проход по всей сетке экрана
+            for (let x = 0; x < w + step; x += step) {
+                for (let y = 0; y < h + step; y += step) {
+                    // Детерминированный псевдослучайный сдвиг сетки (jitter)
+                    const jitterX = Math.sin(x * 0.05 + y * 0.07) * params.jitter;
+                    const jitterY = Math.cos(x * 0.08 + y * 0.04) * params.jitter;
+                    
+                    const px = x + jitterX;
+                    const py = y + jitterY;
+
+                    // Полярные координаты относительно центра
+                    const dx = px - cx;
+                    const dy = py - cy;
+                    const r = Math.sqrt(dx*dx + dy*dy);
+                    const angle = Math.atan2(dy, dx);
+
+                    // Уравнение спирального волнового фронта:
+                    // фаза волны зависит от радиуса, угла и текущего времени
+                    const rTerm = Math.pow(r, params.radialPower) * params.waveFreq;
+                    const phase = rTerm + angle * params.numArms - animTime;
+
+                    // Интенсивность волны (от 0 до 1)
+                    let val = Math.sin(phase);
+                    let intensity = (val + 1) / 2;
+                    intensity = Math.pow(intensity, params.contrast); // Сужаем гребни волн
+
+                    // Плавный вырез под чистую зону в центре
+                    let centerFade = 1.0;
+                    if (r < params.centerVoid) {
+                        centerFade = Math.sin((r / params.centerVoid) * Math.PI / 2);
+                    }
+
+                    const currentIntensity = intensity * centerFade;
+
+                    // Если точка попадает на волновой фронт
+                    if (currentIntensity > params.threshold) {
+                        // Относительная прозрачность в зависимости от удаленности от гребня волны
+                        const opacity = params.maxOpacity * ((currentIntensity - params.threshold) / (1 - params.threshold));
+                        
+                        // Выбор символа: в центре волны более плотные (+), на краях - точки (.)
+                        let char = '.';
+                        if (currentIntensity > 0.8) {
+                            char = '+';
+                        } else if (currentIntensity > 0.5) {
+                            char = 'x';
+                        } else if (currentIntensity > 0.3) {
+                            char = '·';
+                        }
+
+                        ctx.globalAlpha = opacity;
+                        ctx.fillText(char, px, py);
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+
+        // --- УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ ---
+        hidePanelBtn.addEventListener('click', () => {
+            configPanel.classList.add('hidden');
+            floatingGear.classList.remove('hidden');
+        });
+
+        floatingGear.addEventListener('click', () => {
+            configPanel.classList.remove('hidden');
+            floatingGear.classList.add('hidden');
+        });
+
+        hideUiCompletelyBtn.addEventListener('click', () => {
+            configPanel.classList.add('hidden');
+            floatingGear.classList.add('hidden');
+            
+            showToastMessage('Двойной клик в любом месте вернет настройки');
+        });
+
+        // Восстановление UI по двойному клику по экрану
+        window.addEventListener('dblclick', () => {
+            configPanel.classList.remove('hidden');
+            floatingGear.classList.add('hidden');
+        });
+
+        function showToastMessage(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
+        }
+
+        // --- ГЕНЕРАТОР КОДА ДЛЯ TILDA ---
+        copyTildaBtn.addEventListener('click', () => {
+            const tildaHtml = `<!-- Вихревой фон из символов. Интеграция в блок T123 на Tilda -->
+<div class="tilda-vortex-bg-wrapper" id="tilda-vortex-container-\${Math.floor(Math.random() * 100000)}">
+    <canvas class="tilda-vortex-canvas"></canvas>
+    <style>
+        .tilda-vortex-bg-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+            overflow: hidden;
+            background: \${params.bgColor};
+            pointer-events: none;
+            z-index: 0; /* Будет лежать под текстом на Tilda */
+        }
+        .tilda-vortex-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script>
+    (function() {
+        const wrapper = document.currentScript.parentElement;
+        const canvas = wrapper.querySelector('.tilda-vortex-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Сконфигурированные параметры
+        const cfg = {
+            gridStep: \${params.gridStep},
+            numArms: \${params.numArms},
+            waveFreq: \${params.waveFreq.toFixed(5)},
+            waveSpeed: \${params.waveSpeed.toFixed(4)},
+            contrast: \${params.contrast.toFixed(1)},
+            threshold: \${params.threshold.toFixed(2)},
+            jitter: \${params.jitter.toFixed(1)},
+            radialPower: \${params.radialPower.toFixed(2)},
+            fontSize: \${params.fontSize},
+            maxOpacity: \${params.maxOpacity.toFixed(2)},
+            centerVoid: \${params.centerVoid},
+            color: '\${params.color}'
+        };
+
+        function resize() {
+            const rect = wrapper.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        let resizeTimer;
+        const resizeObserver = new ResizeObserver(() => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(resize, 100);
+        });
+        resizeObserver.observe(wrapper);
+        resize();
+
+        let last = performance.now();
+        let time = 0;
+
+        function loop(now) {
+            const dt = (now - last) * 0.001;
+            last = now;
+            time += dt * cfg.waveSpeed;
+
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.width / dpr;
+            const h = canvas.height / dpr;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.font = cfg.fontSize + 'px monospace';
+            ctx.fillStyle = cfg.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const step = cfg.gridStep;
+
+            for (let x = 0; x < w + step; x += step) {
+                for (let y = 0; y < h + step; y += step) {
+                    const jitterX = Math.sin(x * 0.05 + y * 0.07) * cfg.jitter;
+                    const jitterY = Math.cos(x * 0.08 + y * 0.04) * cfg.jitter;
+                    const px = x + jitterX;
+                    const py = y + jitterY;
+
+                    const dx = px - cx;
+                    const dy = py - cy;
+                    const r = Math.sqrt(dx*dx + dy*dy);
+                    const angle = Math.atan2(dy, dx);
+
+                    const rTerm = Math.pow(r, cfg.radialPower) * cfg.waveFreq;
+                    const phase = rTerm + angle * cfg.numArms - time;
+
+                    let val = Math.sin(phase);
+                    let intensity = (val + 1) / 2;
+                    intensity = Math.pow(intensity, cfg.contrast);
+
+                    let centerFade = 1.0;
+                    if (r < cfg.centerVoid) {
+                        centerFade = Math.sin((r / cfg.centerVoid) * Math.PI / 2);
+                    }
+
+                    const currentIntensity = intensity * centerFade;
+
+                    if (currentIntensity > cfg.threshold) {
+                        const opacity = cfg.maxOpacity * ((currentIntensity - cfg.threshold) / (1 - cfg.threshold));
+                        let char = '.';
+                        if (currentIntensity > 0.8) {
+                            char = '+';
+                        } else if (currentIntensity > 0.5) {
+                            char = 'x';
+                        } else if (currentIntensity > 0.3) {
+                            char = '·';
+                        }
+
+                        ctx.globalAlpha = opacity;
+                        ctx.fillText(char, px, py);
+                    }
+                }
+            }
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    })();
+    <\/script>
+</div>`;
+
+            navigator.clipboard.writeText(tildaHtml).then(() => {
+                showToastMessage('Код успешно скопирован в буфер!');
+            }).catch(err => {
+                console.error('Ошибка копирования: ', err);
+                showToastMessage('Не удалось скопировать. Выделите код в консоли.');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Техническая сетка фона для сайта (Техэксперт)</title>
+    
+    <!-- Подключаем шрифт Inter для вывода координат -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #FBFBFB;             /* Ультрасветлый основной фон */
+            --grid-line-color: rgba(226, 232, 240, 0.45); /* Тончайшие серые линии сетки */
+            --accent-color: #FF7200;         /* Фирменный оранжевый для искр */
+            --text-coord: #94A3B8;           /* Цвет для технического текста координат */
+            --font-technical: 'Inter', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            font-family: var(--font-technical);
+        }
+
+        /* --- КОНТЕЙНЕР ФОНА ДЛЯ TILDA ---
+           Задаем position: fixed, чтобы сетка оставалась неподвижной при скролле.
+           Если нужно, чтобы сетка прокручивалась вместе с сайтом, измените на absolute.
+        */
+        .site-technical-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;             /* Размещается позади всего контента */
+            pointer-events: none;    /* Игнорирует клики, чтобы не мешать сайту */
+            overflow: hidden;
+            background-color: var(--bg-color);
+        }
+
+        /* Деликатные линии сетки с выравниванием по центру */
+        .grid-lines-overlay {
+            position: absolute;
+            inset: 0;
+            background-size: 120px 120px;
+            background-position: center center;
+            background-image: 
+                linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
+        }
+
+        /* Деликатные оранжевые точки на пересечениях */
+        .orange-dot {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 6px var(--accent-color);
+            pointer-events: none;
+        }
+
+        /* Эффект расширяющегося импульса вокруг оранжевой точки */
+        .orange-dot::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid var(--accent-color);
+            opacity: 0;
+            animation: dotPulse 3s infinite ease-out;
+        }
+
+        @keyframes dotPulse {
+            0% { transform: scale(0.4); opacity: 0; }
+            20% { opacity: 0.6; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* Крошечные второстепенные серые точки для остальных пересечений */
+        .minor-dot {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            background-color: #CBD5E1;
+            transform: translate(-50%, -50%);
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        /* Технические подписи координат и обозначений */
+        .technical-label {
+            position: absolute;
+            font-size: 7px;
+            font-family: var(--font-technical);
+            color: var(--text-coord);
+            opacity: 0.45;
+            user-select: none;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            margin-left: 8px;
+            margin-top: -8px;
+        }
+
+        /* Демонстрационный контент (чтобы показать, как сайт ложится поверх фона) */
+        .demo-content-overlay {
+            position: relative;
+            z-index: 1; /* Поверх фона */
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 40px;
+            color: #1E293B;
+        }
+
+        .demo-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 16px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+            max-width: 800px;
+        }
+
+        .demo-card h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .demo-card p {
+            line-height: 1.6;
+            color: #475569;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ТЕХНИЧЕСКИЙ ФОН ДЛЯ САЙТА (Скопируйте этот блок в Tilda T123) -->
+    <div class="site-technical-background">
+        <!-- Сетка (выровнена по центру) -->
+        <div class="grid-lines-overlay" id="grid-lines"></div>
+        <!-- Контейнер для динамических элементов (точки, координаты) -->
+        <div id="tech-elements-container" style="position: absolute; inset: 0;"></div>
+    </div>
+
+    <!-- ДЕМОНСТРАЦИОННЫЙ СЛОЙ (Не нужно копировать в Tilda, это просто для теста) -->
+    <div class="demo-content-overlay">
+        <div class="demo-card">
+            <h1>Фоновый паттерн Техэксперт</h1>
+            <p>Этот файл содержит чистую деликатную техническую сетку с координатами и оранжевыми искрами-звездочками, избавленную от тяжелой графики и карточек.</p>
+            <p>Вы можете прокручивать эту страницу — фон зафиксирован на месте (эффект <code>position: fixed</code>). Сетка выглядит чисто, воздушно и подчеркивает строгость структуры сайта.</p>
+        </div>
+        
+        <div class="demo-card" style="margin-top: 200px;">
+            <h2>Как интегрировать этот фон на весь сайт Tilda:</h2>
+            <p>1. Создайте блок T123 (HTML-код) в самом верху вашей страницы (в самом начале или внутри подвала/шапки, чтобы он загружался везде).</p>
+            <p>2. Скопируйте CSS-стили из тега <code>&lt;style&gt;</code> и HTML-разметку фона.</p>
+            <p>3. Вы можете настроить частоту сетки, изменив значение <code>background-size: 120px 120px;</code> в стилях <code>.grid-lines-overlay</code>.</p>
+        </div>
+
+        <div class="demo-card" style="margin-top: 200px; margin-bottom: 400px;">
+            <h2>Производительность</h2>
+            <p>Скрипт оптимизирован: он автоматически определяет размер экрана и расставляет оранжевые звездочки и технические координаты на пересечениях сетки, не перегружая процессор браузера.</p>
+        </div>
+    </div>
+
+    <!-- СКРИПТ ГЕНЕРАЦИИ ТЕХНИЧЕСКИХ ЭЛЕМЕНТОВ ФОНА -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const container = document.getElementById("tech-elements-container");
+            
+            // Настройки сетки (должны совпадать с background-size в CSS)
+            const gridSize = 120; 
+            
+            const buildBackgroundElements = () => {
+                container.innerHTML = ''; // Очищаем контейнер при ресайзе
+                
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                
+                // Вычисляем точную стартовую позицию, чтобы точки идеально ложились на линии CSS сетки,
+                // которая выровнена по центру (background-position: center center)
+                const startX = ((w / 2) - (gridSize / 2)) % gridSize;
+                const startY = ((h / 2) - (gridSize / 2)) % gridSize;
+                
+                // Перебираем пересечения сетки
+                for (let x = startX; x < w; x += gridSize) {
+                    for (let y = startY; y < h; y += gridSize) {
+                        const roundedX = Math.round(x);
+                        const roundedY = Math.round(y);
+                        
+                        // Случайное распределение для естественного вида
+                        const rand = Math.random();
+                        
+                        if (rand < 0.10) {
+                            // 1. Рисуем деликатную оранжевую пульсирующую точку
+                            const dot = document.createElement("div");
+                            dot.className = "orange-dot";
+                            dot.style.left = `${roundedX}px`;
+                            dot.style.top = `${roundedY}px`;
+                            container.appendChild(dot);
+                            
+                            // Рядом со звездочкой пишем координату
+                            const label = document.createElement("div");
+                            label.className = "technical-label";
+                            label.style.left = `${roundedX}px`;
+                            label.style.top = `${roundedY}px`;
+                            label.textContent = `[x:${roundedX} / y:${roundedY}]`;
+                            container.appendChild(label);
+                            
+                        } else if (rand < 0.20) {
+                            // 2. Пишем просто текстовую техническую отметку (код ячейки) без оранжевого акцента
+                            const label = document.createElement("div");
+                            label.className = "technical-label";
+                            label.style.left = `${roundedX}px`;
+                            label.style.top = `${roundedY}px`;
+                            label.textContent = `SYS_L${Math.floor(roundedX/gridSize)}_R${Math.floor(roundedY/gridSize)}`;
+                            container.appendChild(label);
+                            
+                            // И ставим маленькую серую точку в центр
+                            const dot = document.createElement("div");
+                            dot.className = "minor-dot";
+                            dot.style.left = `${roundedX}px`;
+                            dot.style.top = `${roundedY}px`;
+                            container.appendChild(dot);
+                            
+                        } else if (rand < 0.60) {
+                            // 3. Просто ставим деликатную серую точку
+                            const dot = document.createElement("div");
+                            dot.className = "minor-dot";
+                            dot.style.left = `${roundedX}px`;
+                            dot.style.top = `${roundedY}px`;
+                            container.appendChild(dot);
+                        }
+                    }
+                }
+            };
+            
+            // Инициализация при загрузке
+            buildBackgroundElements();
+            
+            // Перестраиваем сетку при изменении размеров экрана с дебаунсом для оптимизации
+            let resizeTimer;
+            window.addEventListener("resize", () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(buildBackgroundElements, 200);
+            });
+        });
+    </script>
+</body>
+</html>
