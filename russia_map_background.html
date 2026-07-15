@@ -532,9 +532,20 @@
             canvas.height = rect.height * dpr;
             ctx.scale(dpr, dpr);
 
-            // Пересчитываем масштабирование карты
-            const pad = 60; // Отступы с краев
+            // Адаптивные отступы: меньше на мобильных
+            const pad = rect.width < 768 ? 15 : 60;
+            
+            // Базовый масштаб по размеру контейнера
             scale = Math.min((rect.width - pad * 2) / bbox.width, (rect.height - pad * 2) / bbox.height);
+            
+            // Увеличиваем карту на 20%
+            scale *= 1.2;
+
+            // На мобильных экранах не даем карте сжиматься слишком сильно
+            if (rect.width < 480 && scale < 0.38) {
+                scale = 0.38;
+            }
+
             offsetX = (rect.width - bbox.width * scale) / 2 - bbox.minX * scale;
             offsetY = (rect.height - bbox.height * scale) / 2 - bbox.minY * scale;
 
@@ -878,8 +889,20 @@
             canvas.height = rect.height * dpr;
             ctx.scale(dpr, dpr);
 
-            const pad = 60;
+            // Адаптивные отступы: меньше на мобильных
+            const pad = rect.width < 768 ? 15 : 60;
+            
+            // Базовый масштаб по размеру контейнера
             scale = Math.min((rect.width - pad * 2) / bbox.width, (rect.height - pad * 2) / bbox.height);
+            
+            // Увеличиваем карту на 20%
+            scale *= 1.2;
+
+            // На мобильных экранах не даем карте сжиматься слишком сильно
+            if (rect.width < 480 && scale < 0.38) {
+                scale = 0.38;
+            }
+
             offsetX = (rect.width - bbox.width * scale) / 2 - bbox.minX * scale;
             offsetY = (rect.height - bbox.height * scale) / 2 - bbox.minY * scale;
 

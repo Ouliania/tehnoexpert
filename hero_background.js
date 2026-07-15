@@ -1,32 +1,4 @@
 (() => {
-  // Внедряем стили CSS динамически
-  const style = document.createElement('style');
-  style.innerHTML = `
-    :root {
-      --border-faint: #E2E8F0;
-      --heat-100: #FF7200;
-      --bg: #FBFBFB;
-    }
-    @keyframes nodePulse {
-      0% { transform: scale(1); opacity: 0.4; }
-      50% { transform: scale(2.0); opacity: 1; }
-      100% { transform: scale(1); opacity: 0.4; }
-    }
-    .pulse-orange-node { 
-      animation: nodePulse 2.5s infinite ease-in-out; 
-}
-
-    /* Автоматически сжимаем контейнер кода до 0 на живом сайте, */
-    /* чтобы он не мешал кликать по кнопкам и ссылкам */
-    #rec2458600001 [data-elem-id="1783748685453"] {
-      width: 0px !important;
-      height: 0px !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-  `;
-  document.head.appendChild(style);
-
   // Захватываем текущий элемент скрипта в момент его выполнения
   const currentScript = document.currentScript;
 
@@ -40,6 +12,37 @@
 
     if (targetBlock.dataset.gridBgInitialized) return;
     targetBlock.dataset.gridBgInitialized = 'true';
+
+    const blockId = targetBlock.id || 'rec2458600001';
+
+    // Внедряем стили CSS динамически для текущего блока
+    const style = document.createElement('style');
+    style.innerHTML = `
+      :root {
+        --border-faint: #E2E8F0;
+        --heat-100: #FF7200;
+        --bg: #FBFBFB;
+      }
+      @keyframes nodePulse {
+        0% { transform: scale(1); opacity: 0.4; }
+        50% { transform: scale(2.0); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.4; }
+      }
+      .pulse-orange-node { 
+        animation: nodePulse 2.5s infinite ease-in-out; 
+      }
+
+      /* Автоматически сжимаем контейнер кода до 0 на живом сайте, */
+      /* чтобы он не мешал кликать по кнопкам и ссылкам */
+      #${blockId} [data-elem-id="1783748685453"] {
+        width: 0px !important;
+        height: 0px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    // Находим контейнер артборда или обертку блока
 
     const container = targetBlock.querySelector('.t396__artboard') || 
                       targetBlock.querySelector('.t-cover__carrier') ||
@@ -92,9 +95,9 @@
     bgWrapper.appendChild(canvas);
     bgWrapper.appendChild(grid);
 
-    // Вставляем фон в самое начало главного блока (вне контейнера Zero Block)
-    if (targetBlock) {
-      targetBlock.insertBefore(bgWrapper, targetBlock.firstChild);
+    // Вставляем фон в самое начало контейнера Zero Block
+    if (container) {
+      container.insertBefore(bgWrapper, container.firstChild);
     }
 
     const NS = 'http://www.w3.org/2000/svg';
@@ -487,28 +490,41 @@
 
       const allSquares = [];
 
-      [0,101,202,303,404,505].forEach(relY => {
+      const maxRows = Math.floor(gridH / 101);
+      const halfRows = Math.min(6, Math.floor(maxRows / 2));
+      const topRows = [];
+      for (let i = 0; i < halfRows; i++) {
+        topRows.push(i * 101);
+      }
+
+      topRows.forEach(relY => {
+        const rowIdx = Math.round(relY / 101);
+        
         curvy(G-1, TOP+relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G-1,y:TOP+relY});
         curvy(G+GRID_W-101, TOP+relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+GRID_W-101,y:TOP+relY});
         curvy(G-1, BOT-SQ-relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G-1,y:BOT-SQ-relY});
         curvy(G+GRID_W-101, BOT-SQ-relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+GRID_W-101,y:BOT-SQ-relY});
+
+        if (rowIdx >= 2) {
+          curvy(G+101, TOP+relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+101,y:TOP+relY});
+          curvy(G+GRID_W-203, TOP+relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+GRID_W-203,y:TOP+relY});
+          curvy(G+101, BOT-SQ-relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+101,y:BOT-SQ-relY});
+          curvy(G+GRID_W-203, BOT-SQ-relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+GRID_W-203,y:BOT-SQ-relY});
+        } else {
+          curvy(G+101, TOP+relY, SQ, SQ, ['tl','bl']);
+          curvy(G+GRID_W-203, TOP+relY, SQ, SQ, ['tr','br']);
+          curvy(G+101, BOT-SQ-relY, SQ, SQ, ['tl','bl']);
+          curvy(G+GRID_W-203, BOT-SQ-relY, SQ, SQ, ['tr','br']);
+        }
       });
 
-      [202,303,404,505].forEach(relY => {
-        curvy(G+101, TOP+relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+101,y:TOP+relY});
-        curvy(G+GRID_W-203, TOP+relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+GRID_W-203,y:TOP+relY});
-        curvy(G+101, BOT-SQ-relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+101,y:BOT-SQ-relY});
-        curvy(G+GRID_W-203, BOT-SQ-relY, SQ, SQ, ['tl','tr','bl','br']); allSquares.push({x:G+GRID_W-203,y:BOT-SQ-relY});
-      });
-      [0,101].forEach(relY => {
-        curvy(G+101, TOP+relY, SQ, SQ, ['tl','bl']); curvy(G+GRID_W-203, TOP+relY, SQ, SQ, ['tr','br']);
-        curvy(G+101, BOT-SQ-relY, SQ, SQ, ['tl','bl']); curvy(G+GRID_W-203, BOT-SQ-relY, SQ, SQ, ['tr','br']);
-      });
-
-      curvy(G-1, TOP, SQ, 203, ['tl','tr','bl','br']);
-      curvy(G+GRID_W-101, TOP, SQ, 203, ['tl','tr','bl','br']);
-      curvy(G-1, BOT-203, SQ, 203, ['tl','tr','bl','br']);
-      curvy(G+GRID_W-101, BOT-203, SQ, 203, ['tl','tr','bl','br']);
+      // Ограничиваем отрисовку боковых декоративных рамок по высоте блока
+      if (halfRows >= 2) {
+        curvy(G-1, TOP, SQ, 203, ['tl','tr','bl','br']);
+        curvy(G+GRID_W-101, TOP, SQ, 203, ['tl','tr','bl','br']);
+        curvy(G-1, BOT-203, SQ, 203, ['tl','tr','bl','br']);
+        curvy(G+GRID_W-101, BOT-203, SQ, 203, ['tl','tr','bl','br']);
+      }
 
       curvy(l910, TOP, 910, gridH, ['bl','br']);
       curvy(l708, TOP, 708, gridH, ['bl','br']);
@@ -531,18 +547,40 @@
         });
       });
 
+      const gridLinesX = [0, 101, 202, 303, 404, 505, 606, 708, 809, 910, 1011, 1112, 1213, 1314];
+      const snapX = (x) => {
+        const offset = x - G;
+        let closest = gridLinesX[0];
+        let minDist = Math.abs(offset - closest);
+        for (let i = 1; i < gridLinesX.length; i++) {
+          const dist = Math.abs(offset - gridLinesX[i]);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = gridLinesX[i];
+          }
+        }
+        return G + closest;
+      };
+      const snapY = (y) => {
+        if (Math.abs(y - TOP) < Math.abs(y - BOT)) {
+          return TOP + Math.round((y - TOP) / 101) * 101;
+        } else {
+          return BOT - Math.round((BOT - y) / 101) * 101;
+        }
+      };
+
       const nodesSet = new Set();
       allSquares.forEach(sq => {
-        nodesSet.add(`${sq.x},${sq.y}`);
-        nodesSet.add(`${sq.x + 101},${sq.y}`);
-        nodesSet.add(`${sq.x},${sq.y + 101}`);
-        nodesSet.add(`${sq.x + 101},${sq.y + 101}`);
+        nodesSet.add(`${snapX(sq.x)},${snapY(sq.y)}`);
+        nodesSet.add(`${snapX(sq.x + 101)},${snapY(sq.y)}`);
+        nodesSet.add(`${snapX(sq.x)},${snapY(sq.y + 101)}`);
+        nodesSet.add(`${snapX(sq.x + 101)},${snapY(sq.y + 101)}`);
       });
       
-      nodesSet.add(`${l708},${TOP+202}`);
-      nodesSet.add(`${l708+708},${TOP+202}`);
-      nodesSet.add(`${l708},${BOT-202}`);
-      nodesSet.add(`${l708+708},${BOT-202}`);
+      nodesSet.add(`${snapX(l708)},${snapY(TOP+202)}`);
+      nodesSet.add(`${snapX(l708+708)},${snapY(TOP+202)}`);
+      nodesSet.add(`${snapX(l708)},${snapY(BOT-202)}`);
+      nodesSet.add(`${snapX(l708+708)},${snapY(BOT-202)}`);
 
       nodesSet.forEach(coord => {
         const [nx, ny] = coord.split(',').map(Number);
@@ -665,25 +703,31 @@
     }
 
     function resize() {
-      // ИСПОЛЬЗУЕМ clientWidth (без учета ширины вертикального скроллбара)
-      const vw = document.documentElement.clientWidth;
-      const vh = targetBlock.clientHeight;
+      // Измеряем высоту контейнера, так как фон находится внутри него
+      const vh = container.clientHeight;
       
-      const s = vw / BASE_W; 
+      // Отключаем растягивание (масштабирование), фиксируем s = 1
+      const s = 1; 
       
-      const gH = Math.max(1010, vh / s - TOP - 100);
+      const gH = Math.max(1010, Math.ceil((vh - TOP - 100) / 101) * 101);
       const dpr = 2, ch = TOP + gH + 100;
       canvas.width = BASE_W * dpr; canvas.height = ch * dpr; canvas.style.width = BASE_W + 'px'; canvas.style.height = ch + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      canvas.style.transform = `scale(${s})`; canvas.style.transformOrigin = 'top center'; canvas.style.left = '50%'; canvas.style.marginLeft = (-BASE_W / 2) + 'px';
-      grid.style.transform = `scale(${s})`; grid.style.transformOrigin = 'top center'; grid.style.width = BASE_W + 'px';
+      canvas.style.transform = 'none'; canvas.style.left = '50%'; canvas.style.marginLeft = (-BASE_W / 2) + 'px';
+      grid.style.transform = 'none'; grid.style.width = BASE_W + 'px';
       grid.style.position = 'absolute'; grid.style.left = '50%'; grid.style.marginLeft = (-BASE_W / 2) + 'px'; grid.style.top = '0'; grid.style.height = ch + 'px';
       
-      // Смещаем фон чуть выше (-TOP * s), чтобы он заходил на меню сверху
-      const offsetTop = -TOP * s;
+      // Смещаем фон чуть выше (-TOP), чтобы он заходил на меню сверху
+      const offsetTop = -TOP;
       bgWrapper.style.top = offsetTop + 'px';
       // Задаем обертке высоту, которая полностью покроет сетку вместе со смещением
-      bgWrapper.style.height = (ch * s) + 'px';
+      bgWrapper.style.height = ch + 'px';
+      
+      // Динамически настраиваем маску для плавного затухания opacity к низу контейнера
+      const fadeStart = TOP + vh * 0.6;
+      const fadeEnd = TOP + vh;
+      bgWrapper.style.webkitMaskImage = `linear-gradient(to bottom, #000 ${fadeStart}px, transparent ${fadeEnd}px)`;
+      bgWrapper.style.maskImage = `linear-gradient(to bottom, #000 ${fadeStart}px, transparent ${fadeEnd}px)`;
       
       build(gH);
     }

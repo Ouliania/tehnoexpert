@@ -74,8 +74,20 @@
         canvas.height = h * dpr;
         ctx.scale(dpr, dpr);
 
-        const pad = 60;
+        // Адаптивные отступы: меньше на мобильных экранах
+        const pad = w < 768 ? 15 : 60;
+        
+        // Базовый масштаб по размеру контейнера
         scale = Math.min((w - pad * 2) / bbox.width, (h - pad * 2) / bbox.height);
+        
+        // Увеличиваем карту на 20%
+        scale *= 1.2;
+
+        // На мобильных экранах не даем карте сжиматься слишком сильно
+        if (w < 480 && scale < 0.38) {
+            scale = 0.38;
+        }
+
         offsetX = (w - bbox.width * scale) / 2 - bbox.minX * scale;
         offsetY = (h - bbox.height * scale) * 0.2 - bbox.minY * scale;
 
